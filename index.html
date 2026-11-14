@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Section Picker</title>
+<style>
+  :root { --brand:#1e40af; --ok:#16a34a; --warn:#d97706; --err:#dc2626; --bg:#f8fafc; }
+  * { box-sizing:border-box; }
+  body { font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif; margin:0; background:var(--bg); color:#0f172a; }
+  header { background:var(--brand); color:#fff; padding:16px 24px; }
+  header h1 { margin:0; font-size:1.25rem; }
+  header p { margin:4px 0 0; opacity:.85; font-size:.85rem; }
+  main { max-width:1100px; margin:0 auto; padding:24px; }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); }
+  .card { background:#fff; border-radius:12px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); border:1px solid #e2e8f0; display:flex; flex-direction:column; }
+  .card h2 { margin:0 0 4px; font-size:1.1rem; }
+  .meta { font-size:.85rem; color:#475569; margin:2px 0; }
+  .seats { font-weight:600; margin:8px 0; }
+  .seats.low { color:var(--warn); } .seats.full { color:var(--err); }
+  table { width:100%; border-collapse:collapse; font-size:.78rem; margin:8px 0; }
+  th,td { padding:4px 6px; border-bottom:1px solid #e2e8f0; text-align:left; }
+  th { background:#f1f5f9; font-weight:600; }
+  button { border:0; border-radius:8px; padding:10px 14px; font-weight:600; cursor:pointer; font-size:.9rem; margin-top:auto; }
+  .btn-pick { background:var(--brand); color:#fff; }
+  .btn-wait { background:var(--warn); color:#fff; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:600; background:#dbeafe; color:var(--brand); }
+  .banner { padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:.9rem; }
+  .banner.ok { background:#dcfce7; color:#166534; } .banner.err { background:#fee2e2; color:#991b1b; }
+  .empty { color:#64748b; text-align:center; padding:48px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📚 Incoming Student Section Picker</h1>
+  <p>Browse sections, see advisers, rooms, seats, and weekly schedules. Pick one or join the waitlist.</p>
+</header>
+<main>
+  <div id="banner"></div>
+  <div id="sections" class="grid"></div>
+</main>
+
+<script>
+// ---------- CONFIG: replace with your real data ----------
+const SECTIONS = [
+  { id:"S1", name:"Grade 7 – Rizal", adviser:"Ms. Cruz", room:"Rm 201", capacity:30, enrolled:27,
+    schedule:[["Mon","7:30–8:30","Math"],["Tue","7:30–8:30","Math"],["Wed","9:00–10:00","Science"],["Thu","9:00–10:00","English"],["Fri","7:30–8:30","Filipino"]] },
+  { id:"S2", name:"Grade 7 – Bonifacio", adviser:"Mr. Reyes", room:"Rm 202", capacity:30, enrolled:30,
+    schedule:[["Mon","8:30–9:30","Science"],["Tue","8:30–9:30","Math"],["Wed","10:00–11:00","English"],["Thu","10:00–11:00","Filipino"],["Fri","8:30–9:30","Math"]] },
+  { id:"S3", name:"Grade 7 – Mabini", adviser:"Ms. Santos", room:"Rm 203", capacity:28, enrolled:22,
+    schedule:[["Mon","9:30–10:30","English"],["Tue","9:30–10:30","Science"],["Wed","7:30–8:30","Math"],["Thu","7:30–8:30","Math"],["Fri","9:30–10:30","English"]] },
+  { id:"S4", name:"Grade 7 – Aguinaldo", adviser:"Mr. Dela Cruz", room:"Rm 204", capacity:28, enrolled:28,
+    schedule:[["Mon","10:30–11:30","Filipino"],["Tue","10:30–11:30","English"],["Wed","8:30–9:30","Math"],["Thu","8:30–9:30","Science"],["Fri","10:30–11:30","Filipino"]] },
+  { id:"S5", name:"Grade 7 – Luna", adviser:"Ms. Torres", room:"Rm 205", capacity:30, enrolled:29,
+    schedule:[["Mon","13:00–14:00","Math"],["Tue","13:00–14:00","Science"],["Wed","14:00–15:00","English"],["Thu","14:00–15:00","Filipino"],["Fri","13:00–14:00","Math"]] },
+];
+
+// ---------- STATE ----------
+const KEY = "section-picker-v1";
+const state = JSON.parse(localStorage.getItem(KEY) || "{}");
+// state = { picked: "S2", waitlists: ["S4"], student: "name" }
+state.waitlists ||= [];
+const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+
+// ---------- RENDER ----------
+function showBanner(msg, type) {
+  document.getElementById("banner").innerHTML = msg ? `<div class="banner ${type}">${msg}</div>` : "";
+}
+
+function render() {
+  const wrap = document.getElementById("sections");
+  wrap.innerHTML = "";
+  for (const s of SECTIONS) {
+    const seatsLeft = s.capacity - s.enrolled;
+    const isPicked = state.picked === s.id;
+    const onWait = state.waitlists.includes(s.id);
+    const seatClass = seatsLeft <= 0 ? "full" : seatsLeft <= 3 ? "low" : "";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h2>${s.name} ${isPicked ? '<span class="pill">✓ Your section</span>' : ''} ${onWait ? '<span class="pill" style="background:#fef3c7;color:#92400e">⏳ Waitlisted</span>' : ''}</h2>
+      <div class="meta">👩‍🏫 ${s.adviser} &nbsp;•&nbsp; 🏫 ${s.room}</div>
+      <div class="seats ${seatClass}">
+        ${seatsLeft > 0 ? `${seatsLeft} of ${s.capacity} seats left` : `FULL — ${s.enrolled} enrolled`}
+      </div>
+      <table>
+        <tr><th>Day</th><th>Time</th><th>Subject</th></tr>
+        ${s.schedule.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}
+      </table>
+      ${buttonFor(s, seatsLeft, isPicked, onWait)}
+    `;
+    wrap.appendChild(card);
+  }
+  if (!SECTIONS.length) wrap.innerHTML = '<div class="empty">No sections configured yet.</div>';
+}
+
+function buttonFor(s, seatsLeft, isPicked, onWait) {
+  if (isPicked) return `<button disabled>Selected</button>`;
+  if (state.picked) return `<button disabled>Already picked another section</button>`;
+  if (seatsLeft > 0) return `<button class="btn-pick" onclick="pick('${s.id}')">Pick this section</button>`;
+  if (onWait) return `<button disabled class="btn-wait">On waitlist (#${state.waitlists.indexOf(s.id)+1})</button>`;
+  return `<button class="btn-wait" onclick="waitlist('${s.id}')">Join waitlist</button>`;
+}
+
+// ---------- ACTIONS ----------
+window.pick = function(id) {
+  const s = SECTIONS.find(x => x.id === id);
+  const left = s.capacity - s.enrolled;
+  if (left <= 0) return showBanner("That section just filled up. Join the waitlist instead.", "err");
+  if (state.picked) return showBanner("You already picked a section.", "err");
+  state.picked = id;
+  save(); render();
+  showBanner(`✅ You picked <strong>${s.name}</strong> (${s.adviser}, ${s.room}). Save this page or screenshot for your records.`, "ok");
+};
+
+window.waitlist = function(id) {
+  const s = SECTIONS.find(x => x.id === id);
+  if (!state.waitlists.includes(id)) state.waitlists.push(id);
+  save(); render();
+  showBanner(`⏳ You're #${state.waitlists.indexOf(id)+1} on the waitlist for <strong>${s.name}</strong>. We'll notify you if a seat opens.`, "ok");
+};
+
+render();
+</script>
+</body>
+</html>
