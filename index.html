@@ -24,6 +24,7 @@
   button { border:0; border-radius:8px; padding:10px 14px; font-weight:600; cursor:pointer; font-size:.9rem; margin-top:auto; }
   .btn-pick { background:var(--brand); color:#fff; }
   .btn-wait { background:var(--warn); color:#fff; }
+  .btn-change { background:#e2e8f0; color:#334155; margin-top:10px; } /* New button style */
   button:disabled { opacity:.5; cursor:not-allowed; }
   .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:600; background:#dbeafe; color:var(--brand); }
   .banner { padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:.9rem; }
@@ -48,11 +49,11 @@ const SECTIONS = [
     schedule:[["Mon","7:30–8:30","Math"],["Tue","7:30–8:30","Math"],["Wed","9:00–10:00","Science"],["Thu","9:00–10:00","English"],["Fri","7:30–8:30","Filipino"]] },
   { id:"S2", name:"Grade 7 – Bonifacio", adviser:"Mr. Pilapil", room:"Rm 202", capacity:30, enrolled:30,
     schedule:[["Mon","8:30–9:30","Science"],["Tue","8:30–9:30","Math"],["Wed","10:00–11:00","English"],["Thu","10:00–11:00","Filipino"],["Fri","8:30–9:30","Math"]] },
-  { id:"S3", name:"Grade 7 – Mabini", adviser:"Mr. Santillan", room:"Rm 203", capacity:28, enrolled:22,
+  { id:"S3", name:"Grade 7 – Mabini", adviser:"Mr. Gontinas", room:"Rm 203", capacity:28, enrolled:22,
     schedule:[["Mon","9:30–10:30","English"],["Tue","9:30–10:30","Science"],["Wed","7:30–8:30","Math"],["Thu","7:30–8:30","Math"],["Fri","9:30–10:30","English"]] },
-  { id:"S4", name:"Grade 7 – Aguinaldo", adviser:"Mr. Gontinas", room:"Rm 204", capacity:28, enrolled:28,
+  { id:"S4", name:"Grade 7 – Aguinaldo", adviser:"Mr. Cabunoc", room:"Rm 204", capacity:28, enrolled:28,
     schedule:[["Mon","10:30–11:30","Filipino"],["Tue","10:30–11:30","English"],["Wed","8:30–9:30","Math"],["Thu","8:30–9:30","Science"],["Fri","10:30–11:30","Filipino"]] },
-  { id:"S5", name:"Grade 7 – Luna", adviser:"Mr. Cabunoc", room:"Rm 205", capacity:30, enrolled:29,
+  { id:"S5", name:"Grade 7 – Luna", adviser:"Mr. Santillan", room:"Rm 205", capacity:30, enrolled:29,
     schedule:[["Mon","13:00–14:00","Math"],["Tue","13:00–14:00","Science"],["Wed","14:00–15:00","English"],["Thu","14:00–15:00","Filipino"],["Fri","13:00–14:00","Math"]] },
 ];
 
@@ -96,7 +97,11 @@ function render() {
 }
 
 function buttonFor(s, seatsLeft, isPicked, onWait) {
-  if (isPicked) return `<button disabled>Selected</button>`;
+  if (isPicked) {
+    // NEW: Adds the "Change Section" button if this is the picked section
+    return `<button disabled>Selected</button>
+            <button class="btn-change" onclick="changeSection()">Change Section</button>`;
+  }
   if (state.picked) return `<button disabled>Already picked another section</button>`;
   if (seatsLeft > 0) return `<button class="btn-pick" onclick="pick('${s.id}')">Pick this section</button>`;
   if (onWait) return `<button disabled class="btn-wait">On waitlist (#${state.waitlists.indexOf(s.id)+1})</button>`;
@@ -119,6 +124,15 @@ window.waitlist = function(id) {
   if (!state.waitlists.includes(id)) state.waitlists.push(id);
   save(); render();
   showBanner(`⏳ You're #${state.waitlists.indexOf(id)+1} on the waitlist for <strong>${s.name}</strong>. We'll notify you if a seat opens.`, "ok");
+};
+
+// NEW: Function to clear the current pick
+window.changeSection = function() {
+  if(confirm("Are you sure you want to drop your current section and pick a new one?")) {
+    state.picked = null;
+    save(); render();
+    showBanner("Section removed. You can now pick a new section.", "ok");
+  }
 };
 
 render();
